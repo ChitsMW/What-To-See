@@ -1,17 +1,18 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div id="app">
+    <TouristMap />
+  </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import TouristMap from './components/TouristMap.vue';
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
-  }
-}
+    TouristMap,
+  },
+};
 </script>
 
 <style>
@@ -24,3 +25,4 @@ export default {
   margin-top: 60px;
 }
 </style>
+
