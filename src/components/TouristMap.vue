@@ -1,7 +1,7 @@
 <template>
   <div>
     <input type="text" v-model="searchQuery" @keyup.enter="searchLocation" placeholder="Enter a location" />
-    <select v-model="selectedType" @change="fetchPlaces">
+    <select v-model="selectedType" @change="handleTypeChange">
       <option value="">All Types</option>
       <option value="tourist_attraction">Tourist Attraction</option>
       <option value="museum">Museum</option>
@@ -22,6 +22,7 @@ export default {
       mapCenter: { lat: 37.7749, lng: -122.4194 },
       zoom: 12,
       places: [],
+      markers: [],
       searchQuery: '',
       selectedType: '',
       infoWindow: null,
@@ -36,21 +37,35 @@ export default {
       this.infoWindow = new window.google.maps.InfoWindow();
       this.fetchPlaces();
     },
+    handleTypeChange() {
+      console.log('Type changed to:', this.selectedType);
+      this.clearMarkers();
+      this.fetchPlaces();
+    },
+    clearMarkers() {
+      console.log('Clearing markers. Current count:', this.markers.length);
+      this.markers.forEach(marker => marker.setMap(null));
+      this.markers = [];
+      this.places = [];
+      console.log('Markers cleared. New count:', this.markers.length);
+    },
     fetchPlaces() {
       if (!this.map) {
         console.error('Map not initialized');
         return;
       }
 
+      console.log('Fetching places for type:', this.selectedType);
       const service = new window.google.maps.places.PlacesService(this.map);
       const request = {
         location: new window.google.maps.LatLng(this.mapCenter.lat, this.mapCenter.lng),
         radius: '5000',
-        type: this.selectedType || ['tourist_attraction', 'museum', 'park', 'amusement_park', 'art_gallery'],
+        type: this.selectedType ? [this.selectedType] : ['tourist_attraction', 'museum', 'park', 'amusement_park', 'art_gallery'],
       };
 
       service.nearbySearch(request, (results, status) => {
         if (status === window.google.maps.places.PlacesServiceStatus.OK) {
+          console.log('Places fetched:', results.length);
           this.places = results;
           this.addMarkers();
         } else {
@@ -64,6 +79,7 @@ export default {
         return;
       }
 
+      console.log('Searching for location:', this.searchQuery);
       const geocoder = new window.google.maps.Geocoder();
       geocoder.geocode({ address: this.searchQuery }, (results, status) => {
         if (status === window.google.maps.GeocoderStatus.OK) {
@@ -71,19 +87,17 @@ export default {
             lat: results[0].geometry.location.lat(),
             lng: results[0].geometry.location.lng(),
           };
+          console.log('New map center:', this.mapCenter);
           this.map.setCenter(this.mapCenter);
+          this.clearMarkers();
           this.fetchPlaces();
+        } else {
+          console.error('Geocoding failed:', status);
         }
       });
     },
     addMarkers() {
-      // Clear existing markers
-      this.places.forEach(place => {
-        if (place.marker) {
-          place.marker.setMap(null);
-        }
-      });
-
+      console.log('Adding markers for', this.places.length, 'places');
       this.places.forEach(place => {
         const marker = new window.google.maps.Marker({
           position: place.geometry.location,
@@ -95,8 +109,9 @@ export default {
           this.showPlaceDetails(place, marker);
         });
 
-        place.marker = marker;
+        this.markers.push(marker);
       });
+      console.log('Total markers after adding:', this.markers.length);
     },
     showPlaceDetails(place, marker) {
       const service = new window.google.maps.places.PlacesService(this.map);
