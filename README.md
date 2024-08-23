@@ -1,4 +1,15 @@
-# tourist-attraction-finder
+# Tourist Attraction Finder
+
+## Purpose:
+
+## Tech Stack:
+
+## Team:
+
+## Description:
+
+## Fun Fact:
+
 
 ## Project setup
 ```
