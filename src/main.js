@@ -1,16 +1,24 @@
-
 import { createApp } from 'vue';
 import App from './App.vue';
-import * as VueGoogleMaps from '@fawmi/vue-google-maps';
 
 const app = createApp(App);
 
-app.use(VueGoogleMaps, {
-  load: {
-    key: 'AIzaSyBjbUH1XRgMqg8t4imnnC_xh3qkEgh_DHw',
-    libraries: 'places',
-  },
-});
+function initGoogleMaps() {
+  return new Promise((resolve, reject) => {
+    window.initMap = resolve;
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBjbUH1XRgMqg8t4imnnC_xh3qkEgh_DHw&libraries=places&callback=initMap`;
+    script.async = true;
+    script.defer = true;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
 
-app.mount('#app');
-  
+initGoogleMaps()
+  .then(() => {
+    app.mount('#app');
+  })
+  .catch((error) => {
+    console.error('Failed to load Google Maps API:', error);
+  });
