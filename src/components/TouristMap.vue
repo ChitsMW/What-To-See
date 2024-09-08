@@ -1,5 +1,388 @@
 <template>
   <div>
+    <div class="container mb-4">
+      <div class="row">
+        <div class="col-md-8 mx-auto">
+          <div class="controls-container">
+            <div class="input-group">
+              <input
+                type="text"
+                class="form-control"
+                v-model="searchQuery"
+                @keyup.enter="searchLocation"
+                placeholder="Enter a location"
+              />
+              <div class="input-group-append">
+                <button class="btn btn-primary" @click="searchLocation">
+                  Search
+                </button>
+              </div>
+            </div>
+            <div class="dropdown ms-2">
+              <button
+                class="btn btn-secondary dropdown-toggle"
+                type="button"
+                id="dropdownMenuButton"
+                data-bs-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                {{ selectedType || 'All Types' }}
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                <li><a class="dropdown-item" href="#" @click="selectType('')">All Types</a></li>
+                <li><a class="dropdown-item" href="#" @click="selectType('tourist_attraction')">Tourist Attraction</a></li>
+                <li><a class="dropdown-item" href="#" @click="selectType('museum')">Museum</a></li>
+                <li><a class="dropdown-item" href="#" @click="selectType('park')">Park</a></li>
+                <li><a class="dropdown-item" href="#" @click="selectType('amusement_park')">Amusement Park</a></li>
+                <li><a class="dropdown-item" href="#" @click="selectType('art_gallery')">Art Gallery</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="map-container">
+      <div ref="mapRef" style="width: 100%; height: 500px;"></div>
+    </div>
+  </div>
+</template>
+
+
+<!-- <template>
+  <div>
+    <div class="container mb-4">
+      <div class="row">
+        <div class="col-md-8 mx-auto">
+          <div class="controls-container">
+            <div class="input-group">
+              <input
+                type="text"
+                class="form-control"
+                v-model="searchQuery"
+                @keyup.enter="searchLocation"
+                placeholder="Enter a location"
+              />
+              <div class="input-group-append">
+                <button class="btn btn-primary" @click="searchLocation">
+                  Search
+                </button>
+              </div>
+            </div>
+            <div class="dropdown ms-2">
+              <button
+                class="btn btn-secondary dropdown-toggle"
+                type="button"
+                id="dropdownMenuButton"
+                data-bs-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                {{ selectedType || 'All Types' }}
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                <li>
+                  <a class="dropdown-item" href="#" @click="selectType('')">
+                    All Types
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="#"
+                    @click="selectType('tourist_attraction')"
+                  >
+                    Tourist Attraction
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="#"
+                    @click="selectType('museum')"
+                  >
+                    Museum
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#" @click="selectType('park')">
+                    Park
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="#"
+                    @click="selectType('amusement_park')"
+                  >
+                    Amusement Park
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="#"
+                    @click="selectType('art_gallery')"
+                  >
+                    Art Gallery
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="map-container">
+      <div ref="mapRef" style="width: 100%; height: 500px;"></div>
+    </div>
+  </div>
+</template> -->
+
+<script>
+export default {
+  name: 'TouristMap',
+  data() {
+    return {
+      map: null,
+      mapCenter: { lat: 37.7749, lng: -122.4194 },
+      zoom: 12,
+      places: [],
+      markers: [],
+      searchQuery: '',
+      selectedType: '',
+      infoWindow: null,
+      loading: true,
+      mapError: false,
+      placesService: null,
+    };
+  },
+  methods: {
+    initMap() {
+      if (window.google && window.google.maps) {
+        this.map = new window.google.maps.Map(this.$refs.mapRef, {
+          center: this.mapCenter,
+          zoom: this.zoom,
+        });
+        this.infoWindow = new window.google.maps.InfoWindow();
+        this.placesService = new window.google.maps.places.PlacesService(this.map);
+        this.fetchPlaces();
+        this.loading = false;
+      } else {
+        console.error('Google Maps API is not loaded');
+        this.mapError = true;
+      }
+    },
+    searchLocation() {
+      if (!this.searchQuery) {
+        alert('Please enter a location to search.');
+        return;
+      }
+
+      const request = {
+        query: this.searchQuery,
+        fields: ['name', 'geometry'],
+      };
+
+      this.placesService.findPlaceFromQuery(request, (results, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
+          const place = results[0];
+          this.map.setCenter(place.geometry.location);
+          this.map.setZoom(14);
+          this.fetchPlaces();
+        } else {
+          console.error('Search failed:', status);
+        }
+      });
+    },
+    fetchPlaces() {
+      if (!this.map || !this.placesService) return;
+
+      const request = {
+        location: this.map.getCenter(),
+        radius: '5000',
+        type: this.selectedType || ['tourist_attraction', 'museum', 'park', 'amusement_park', 'art_gallery'],
+      };
+
+      this.placesService.nearbySearch(request, (results, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
+          this.clearMarkers();
+          results.forEach((place) => {
+            const marker = new window.google.maps.Marker({
+              map: this.map,
+              position: place.geometry.location,
+            });
+
+            this.markers.push(marker);
+            marker.addListener('click', () => {
+              this.infoWindow.setContent(place.name);
+              this.infoWindow.open(this.map, marker);
+            });
+          });
+        } else {
+          console.error('Places search failed:', status);
+        }
+      });
+    },
+    selectType(type) {
+      this.selectedType = type;
+      if (this.map) {
+        this.fetchPlaces();
+      }
+    },
+    clearMarkers() {
+      this.markers.forEach(marker => marker.setMap(null));
+      this.markers = [];
+    }
+  },
+  mounted() {
+    // Use Vue.nextTick to ensure the DOM is updated before initializing the map
+    this.$nextTick(() => {
+      if (window.google && window.google.maps) {
+        this.initMap();
+      } else {
+        console.error('Google Maps API is not loaded. Please check your main.js configuration.');
+        this.mapError = true;
+      }
+    });
+  },
+};
+</script>
+
+<style scoped>
+.controls-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.input-group {
+  max-width: 600px;
+}
+.dropdown {
+  margin-left: 10px;
+}
+.map-container {
+  width: 100%;
+  height: 500px;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+}
+</style>
+
+<!-- <template>
+  <div>
+    <div class="container mb-4">
+      <div class="row">
+        <div class="col-md-8 mx-auto">
+          <div class="controls-container">
+            <div class="input-group">
+              <input type="text" class="form-control" v-model="searchQuery" @keyup.enter="searchLocation" placeholder="Enter a location">
+              <div class="input-group-append">
+                <button class="btn btn-primary" @click="searchLocation">Search</button>
+              </div>
+            </div>
+            <div class="dropdown ms-2">
+              <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                {{ selectedType || 'All Types' }}
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                <li><a class="dropdown-item" href="#" @click="selectType('')">All Types</a></li>
+                <li><a class="dropdown-item" href="#" @click="selectType('tourist_attraction')">Tourist Attraction</a></li>
+                <li><a class="dropdown-item" href="#" @click="selectType('museum')">Museum</a></li>
+                <li><a class="dropdown-item" href="#" @click="selectType('park')">Park</a></li>
+                <li><a class="dropdown-item" href="#" @click="selectType('amusement_park')">Amusement Park</a></li>
+                <li><a class="dropdown-item" href="#" @click="selectType('art_gallery')">Art Gallery</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="map-container">
+      <div ref="mapRef" style="width: 100%; height: 500px;"></div>
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'TouristMap',
+  data() {
+    return {
+      map: null,
+      mapCenter: { lat: 37.7749, lng: -122.4194 },
+      zoom: 12,
+      places: [],
+      markers: [],
+      searchQuery: '',
+      selectedType: '',
+      infoWindow: null,
+    };
+  },
+  methods: {
+    initMap() {
+      // eslint-disable-next-line
+      if (this.$google && this.$google.maps) {
+        // eslint-disable-next-line
+        this.map = new this.$google.maps.Map(this.$refs.mapRef, {
+          center: this.mapCenter,
+          zoom: this.zoom,
+        });
+        // eslint-disable-next-line
+        this.infoWindow = new this.$google.maps.InfoWindow();
+        this.fetchPlaces();
+      } else {
+        console.error('Google Maps API is not loaded');
+      }
+    },
+    searchLocation() {
+      console.log('Searching for:', this.searchQuery);
+      // Implement search functionality
+    },
+    fetchPlaces() {
+      console.log('Fetching places for type:', this.selectedType);
+      // Implement fetching places from Google Maps API
+    },
+    selectType(type) {
+      this.selectedType = type;
+      this.fetchPlaces();
+    },
+  },
+  mounted() {
+    this.$nextTick(() => {
+      this.initMap();
+    });
+  },
+};
+</script>
+
+<style scoped>
+.controls-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.input-group {
+  max-width: 600px;
+}
+.dropdown {
+  margin-left: 10px;
+}
+.map-container {
+  width: 100%;
+  height: 500px;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+}
+</style> -->
+
+
+<!-- <template>
+  <div>
     <input type="text" v-model="searchQuery" @keyup.enter="searchLocation" placeholder="Enter a location" />
     <select v-model="selectedType" @change="handleTypeChange">
       <option value="">All Types</option>
@@ -136,7 +519,7 @@ select {
   margin-left: 10px;
 }
 </style>
-
+ -->
 
 
 
