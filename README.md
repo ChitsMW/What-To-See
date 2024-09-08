@@ -14,8 +14,9 @@ The project will expand gradually, as I continue to add more features as I learn
 ## Fun Fact:
 This project allowed me to get hands-on experience with displaying and interacting with map data.
 ## Still To Do:
-Work on the CSS (styling) with possible use of Bootstrap to refine the look of the app.
-I would also like to add reviews.
+[] Work on the CSS (styling) with possible use of Bootstrap to refine the look of the app. (Done)
+[] Need to fix dropd down menu filter functionality for search results.
+[] I would also like to add reviews.
 ## Check it out:
 www.chitsintech.com
 
